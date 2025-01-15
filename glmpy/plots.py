@@ -657,12 +657,44 @@ class NCProfile:
 
         return reproj_var
 
+    def _validate_data_range(self, data, min_diff=0.1):
+        """Validate the data range and return suggested vmin/vmax if needed.
+        
+        Parameters
+        ----------
+        data : numpy.ma.core.MaskedArray
+            The data array to validate
+        min_diff : float
+            Minimum required difference between min and max values
+            
+        Returns
+        -------
+        tuple
+            (vmin, vmax) if range is too small, None otherwise
+        """
+        valid_data = data[~np.isnan(data)]
+        if len(valid_data) == 0:
+            return None
+            
+        data_min = np.min(valid_data)
+        data_max = np.max(valid_data)
+        data_range = data_max - data_min
+        
+        if data_range < min_diff:
+            # If range is too small, create artificial range centered on mean
+            mean_val = (data_max + data_min) / 2
+            vmin = mean_val - min_diff/2
+            vmax = mean_val + min_diff/2
+            return (vmin, vmax)
+        return None
+
     def plot_var(
         self,
         ax: Axes,
         var: str,
         reference: str = "bottom",
         param_dict: dict = {},
+        min_diff: float = 0.1
     ) -> AxesImage:
         """Plot the profile timeseries of a variable on a matplotlib Axes.
 
@@ -678,6 +710,9 @@ class NCProfile:
             "bottom".
         param_dict : dict, optional
             Parameters passed to matplotlib.axes.Axes.imshow. Default is {}.
+        min_diff : float, optional
+            Minimum required difference between min and max values. If the actual
+            range is smaller, artificial limits will be set. Default is 0.1.
 
         Returns
         -------
@@ -688,22 +723,34 @@ class NCProfile:
             var=var, reference=reference
         )
         x_dates = self._get_time()
+        
+        # Validate data range and set vmin/vmax if needed
+        range_limits = self._validate_data_range(reproj_var, min_diff)
+        if range_limits is not None:
+            param_dict['vmin'] = range_limits[0]
+            param_dict['vmax'] = range_limits[1]
+
+        # Calculate proper x-axis extent
+        x_extent = [
+            x_dates[0] - (x_dates[1] - x_dates[0])/2,  # Start half an interval before first date
+            x_dates[-1] + (x_dates[1] - x_dates[0])/2  # End half an interval after last date
+        ]
+
         self._set_default_plot_params(
             param_dict,
             {
                 "interpolation": "bilinear",
                 "aspect": "auto",
                 "cmap": "Spectral_r",
-                "extent": [x_dates[0], x_dates[-1], self._max_depth, 0],
+                "extent": [x_extent[0], x_extent[1], self._max_depth, 0],
             },
         )
 
         out = ax.imshow(reproj_var, **param_dict)
-        locator = mdates.AutoDateLocator()
-        date_formatter = mdates.DateFormatter("%d/%m/%y")
+        
+        # Set x-axis ticks to actual dates
         ax.set_xticks(x_dates)
-        ax.xaxis.set_major_locator(locator)
-        ax.xaxis.set_major_formatter(date_formatter)
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m/%y"))
         ax.set_ylabel("Depth (m)")
         ax.set_xlabel("Date")
 
