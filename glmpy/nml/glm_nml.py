@@ -1239,6 +1239,11 @@ class InitProfilesBlock(_BaseBlock):
         wq_names: Union[List[str], str, None] = None,
         wq_init_vals: Union[List[float], float, None] = None,
         restart_variables: Union[List[float], float, None] = None,
+        snow_thickness: Union[float, None] = None,
+        white_ice_thickness: Union[float, None] = None,
+        blue_ice_thickness: Union[float, None] = None,
+        avg_surf_temp: Union[float, None] = None,
+        restart_mixer_count: Union[int, None] = None,
     ):
         self.lake_depth = lake_depth
         self.num_depths = num_depths
@@ -1249,6 +1254,11 @@ class InitProfilesBlock(_BaseBlock):
         self.wq_names = wq_names
         self.wq_init_vals = wq_init_vals
         self.restart_variables = restart_variables
+        self.snow_thickness = snow_thickness
+        self.white_ice_thickness = white_ice_thickness
+        self.blue_ice_thickness = blue_ice_thickness
+        self.avg_surf_temp = avg_surf_temp
+        self.restart_mixer_count = restart_mixer_count
         
     def get_params(
         self, 
@@ -1279,6 +1289,11 @@ class InitProfilesBlock(_BaseBlock):
         self.wq_names = self._single_value_to_list(self.wq_names)
         self.wq_init_vals = self._single_value_to_list(self.wq_init_vals)
         self.restart_variables = self._single_value_to_list(self.restart_variables)
+        # self.snow_thickness = self._single_value_to_list(self.snow_thickness)
+        # self.white_ice_thickness = self._single_value_to_list(self.white_ice_thickness)
+        # self.blue_ice_thickness = self._single_value_to_list(self.blue_ice_thickness)
+        # self.avg_surf_temp = self._single_value_to_list(self.avg_surf_temp)
+        # self.restart_mixer_count = self._single_value_to_list(self.restart_mixer_count)
         if check_params:
             warnings.warn(
                 "As of glm-py 0.2.0, error checking with check_params is not"
@@ -1295,7 +1310,12 @@ class InitProfilesBlock(_BaseBlock):
             "num_wq_vars": self.num_wq_vars,
             "wq_names": self.wq_names,
             "wq_init_vals": self.wq_init_vals,
-            "restart_variables": self.restart_variables
+            "restart_variables": self.restart_variables,
+            "snow_thickness": self.snow_thickness,
+            "white_ice_thickness": self.white_ice_thickness,
+            "blue_ice_thickness": self.blue_ice_thickness,
+            "avg_surf_temp": self.avg_surf_temp,
+            "restart_mixer_count": self.restart_mixer_count
         }
         return init_profiles_dict
     

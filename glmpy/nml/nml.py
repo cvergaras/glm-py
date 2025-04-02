@@ -784,6 +784,11 @@ class NMLWriter(_NML):
                 ),
                 "wq_init_vals": NMLWriter.write_nml_array,
                 "restart_variables": NMLWriter.write_nml_array,
+                "snow_thickness": None,
+                "white_ice_thickness": None,
+                "blue_ice_thickness": None,
+                "avg_surf_temp": None,
+                "restart_mixer_count": None,
             },
             "light": {
                 "light_mode": None,
@@ -857,6 +862,7 @@ class NMLWriter(_NML):
                 "subm_flag": lambda x: NMLWriter.write_nml_list(
                     x, NMLWriter.write_nml_bool
                 ),
+                "subm_elev": NMLWriter.write_nml_list,
                 "strm_hf_angle": NMLWriter.write_nml_list,
                 "strmbd_slope": NMLWriter.write_nml_list,
                 "strmbd_drag": NMLWriter.write_nml_list,
@@ -1734,6 +1740,11 @@ class NMLReader(_NML):
                 "restart_variables": lambda x: NMLReader.read_nml_array(
                     x, NMLReader.read_nml_float
                 ),
+                "snow_thickness": NMLReader.read_nml_float,
+                "white_ice_thickness": NMLReader.read_nml_float,
+                "blue_ice_thickness": NMLReader.read_nml_float,
+                "avg_surf_temp": NMLReader.read_nml_float,
+                "restart_mixer_count": NMLReader.read_nml_int,
             },
             "light": {
                 "light_mode": NMLReader.read_nml_int,
@@ -1822,6 +1833,9 @@ class NMLReader(_NML):
                 ),
                 "subm_flag": lambda x: NMLReader.read_nml_list(
                     x, NMLReader.read_nml_bool
+                ),
+                "subm_elev": lambda x: NMLReader.read_nml_list(
+                    x, NMLReader.read_nml_float
                 ),
                 "strm_hf_angle": lambda x: NMLReader.read_nml_list(
                     x, NMLReader.read_nml_float
