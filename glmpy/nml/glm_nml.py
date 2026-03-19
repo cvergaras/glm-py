@@ -50,6 +50,9 @@ class GLMNML:
     glm_setup : dict
         Dictionary of `&glm_setup` parameters. See `glm_nml.SetupBlock`. 
         Required for every GLM simulation.
+    debugging : dict
+        Dictionary of `&debugging` parameters. See `glm_nml.DebuggingBlock`. 
+        Default is `None`.
     morphometry : dict
         Dictionary of `&morphometry` parameters. See `glm_nml.MorphometryBlock`
         . Required for every GLM simulation.
@@ -97,6 +100,7 @@ class GLMNML:
 
     Initialise instances of the NML configuration block classes:
     >>> glm_setup = glm_nml.SetupBlock()
+    >>> debugging = glm_nml.DebuggingBlock()
     >>> morphometry = glm_nml.MorphometryBlock()
     >>> time = glm_nml.TimeBlock()
     >>> init_profiles = glm_nml.InitProfilesBlock()
@@ -114,6 +118,7 @@ class GLMNML:
     Set the instance attributes from dictionaries of GLM parameters (omitted 
     for brevity):
     >>> glm_setup.set_attributes(glm_setup_attrs)
+    >>> debugging.set_attributes(debugging_attrs)
     >>> morphometry.set_attributes(morphometry_attrs)
     >>> time.set_attributes(time_attrs)
     >>> init_profiles.set_attributes(init_profiles_attrs)
@@ -132,6 +137,7 @@ class GLMNML:
     returned by the call method of block classes).
     >>> nml_file = glm_nml.GLMNML(
     ...     glm_setup=glm_setup(),
+    ...     debugging=debugging(),
     ...     morphometry=morphometry(),
     ...     time=time(),
     ...     init_profiles=init_profiles(),
@@ -153,35 +159,38 @@ class GLMNML:
     def __init__(
         self,
         glm_setup: dict,
+        debugging: dict,
         morphometry: dict,
         time: dict,
         init_profiles: dict,
+        wq_setup: Union[dict, None] = None,  
+        light: Union[dict, None] = None,
         mixing: Union[dict, None] = None,
         output: Union[dict, None] = None,
         meteorology: Union[dict, None] = None,
-        light: Union[dict, None] = None,
         bird_model: Union[dict, None] = None,
         inflow: Union[dict, None] = None,
         outflow: Union[dict, None] = None,
         sediment: Union[dict, None] = None,
         snow_ice: Union[dict, None] = None,
-        wq_setup: Union[dict, None] = None,  
         check_params: bool = False      
     ):
         self.glm_setup = glm_setup
+        self.debugging = debugging
+        self.wq_setup = wq_setup
+        self.light = light
         self.mixing = mixing
         self.morphometry = morphometry
         self.time = time
         self.output = output
         self.init_profiles = init_profiles
         self.meteorology = meteorology
-        self.light = light
         self.bird_model = bird_model
         self.inflow = inflow
         self.outflow = outflow
         self.sediment = sediment
         self.snow_ice = snow_ice
-        self.wq_setup = wq_setup
+
 
         if check_params:
             warnings.warn(
@@ -207,15 +216,15 @@ class GLMNML:
         """
         nml_dict = {}
         block_dicts = [
-            self.glm_setup, self.mixing, self.morphometry, self.time, 
-            self.output, self.init_profiles, self.meteorology, self.light,
+            self.glm_setup, self.debugging, self.wq_setup, self.light, self.mixing, self.morphometry, self.time, 
+            self.output, self.init_profiles, self.meteorology, 
             self.bird_model, self.inflow, self.outflow, self.sediment,
-            self.snow_ice, self.wq_setup
+            self.snow_ice
         ]
         block_names = [
-            "glm_setup", "mixing", "morphometry", "time", "output", 
-            "init_profiles", "meteorology", "light", "bird_model", "inflow",
-            "outflow", "sediment", "snowice", "wq_setup"
+            "glm_setup", "debugging", "wq_setup","light", "mixing", "morphometry", "time", "output", 
+            "init_profiles", "meteorology",  "bird_model", "inflow",
+            "outflow", "sediment", "snowice"
         ]
         for i in range(0, len(block_dicts)):
             if block_dicts[i] is not None:
@@ -433,6 +442,41 @@ class NMLGLMSetup(SetupBlock):
         )
         super().__init__(*args, **kwargs)
 
+class DebuggingBlock(_BaseBlock):
+    """Construct the `&debugging` model parameters.
+    """
+    def __init__(self,
+        disable_evap: Union[bool, None] = None,
+    ):
+        self.disable_evap = disable_evap
+    
+    def get_params(self, check_params: bool = False) -> dict[str, Union[float, int, str, bool, None]]:
+        """Returns a dictionary of model parameters.
+        """
+        if check_params:
+            warnings.warn(
+                "As of glm-py 0.2.0, error checking with check_params is not"
+                " implemented. Erroneous parameters will not be raised.",
+                category=UserWarning,
+                stacklevel=2
+            )
+        debugging_dict = {
+            "disable_evap": self.disable_evap
+        }
+        return debugging_dict
+    
+    def __call__(self, check_errors: bool = False) -> dict[str, Union[float, int, str, bool, None]]:
+        return self.get_params(check_params=check_errors)
+    
+class NMLDebugging(DebuggingBlock):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            _deprecated_class_warning("NMLDebugging", "DebuggingBlock", "glm_nml"),
+            DeprecationWarning,
+            stacklevel=2
+        )
+        super().__init__(*args, **kwargs)
+
 class MixingBlock(_BaseBlock):
     """Construct the `&mixing` model parameters.
 
@@ -497,6 +541,7 @@ class MixingBlock(_BaseBlock):
         coef_mix_shear: Union[float, None] = None,
         coef_mix_turb: Union[float, None] = None,
         coef_mix_KH: Union[float, None] = None,
+        coef_mix_shreq: Union[float, None] = None,
         deep_mixing: Union[int, None] = None,
         coef_mix_hyp: Union[float, None] = None,
         diff: Union[float, None] = None,        
@@ -507,6 +552,7 @@ class MixingBlock(_BaseBlock):
         self.coef_mix_shear = coef_mix_shear
         self.coef_mix_turb = coef_mix_turb
         self.coef_mix_KH = coef_mix_KH
+        self.coef_mix_shreq = coef_mix_shreq
         self.deep_mixing = deep_mixing
         self.coef_mix_hyp = coef_mix_hyp
         self.diff = diff 
@@ -546,6 +592,7 @@ class MixingBlock(_BaseBlock):
             "coef_mix_shear": self.coef_mix_shear,
             "coef_mix_turb": self.coef_mix_turb,
             "coef_mix_KH": self.coef_mix_KH,
+            "coef_mix_shreq": self.coef_mix_shreq,
             "deep_mixing": self.deep_mixing,
             "coef_mix_hyp": self.coef_mix_hyp,
             "diff": self.diff
@@ -1162,8 +1209,10 @@ class InitProfilesBlock(_BaseBlock):
         Initial lake height/depth (m). Default is `None`.
     num_depths : Union[int, None]
         Number of depths provided for initial profiles. Default is `None`.
+    num_heights: xx
     the_depths : Union[List[float], float, None]
         The depths of the initial profile points (m). Default is `None`.
+    the_heights: xx
     the_temps : Union[List[float], float, None]
         The temperature (°C) at each of the initial profile points. Default is
         `None`.
@@ -1181,6 +1230,7 @@ class InitProfilesBlock(_BaseBlock):
         (rows = vars; cols = depths). Default is `None`.
     restart_variables : Union[List[float], float, None]
         Array of restart variables to restart model from a previous saved state. Default is `None`.
+    restart_mixer_count: xxx
     
     Examples
     --------
@@ -1232,7 +1282,9 @@ class InitProfilesBlock(_BaseBlock):
         self,
         lake_depth: Union[float, None] = None,
         num_depths: Union[int, None] = None,
+        num_heights: Union[int, None] = None,
         the_depths: Union[List[float], float, None] = None,
+        the_heights: Union[List[float], float, None] = None,
         the_temps: Union[List[float], float, None] = None,
         the_sals: Union[List[float], float, None] = None,
         num_wq_vars: Union[int, None] = None,
@@ -1247,7 +1299,9 @@ class InitProfilesBlock(_BaseBlock):
     ):
         self.lake_depth = lake_depth
         self.num_depths = num_depths
+        self.num_heights = num_heights
         self.the_depths = the_depths
+        self.the_heights = the_heights
         self.the_temps = the_temps
         self.the_sals = the_sals
         self.num_wq_vars = num_wq_vars
@@ -1284,6 +1338,7 @@ class InitProfilesBlock(_BaseBlock):
             A dictionary containing the configuration block parameters.
         """
         self.the_depths = self._single_value_to_list(self.the_depths)
+        self.the_heights = self._single_value_to_list(self.the_heights)
         self.the_temps = self._single_value_to_list(self.the_temps)
         self.the_depths = self._single_value_to_list(self.the_depths)
         self.wq_names = self._single_value_to_list(self.wq_names)
@@ -1304,7 +1359,9 @@ class InitProfilesBlock(_BaseBlock):
         init_profiles_dict = {
             "lake_depth": self.lake_depth,
             "num_depths": self.num_depths,
+            "num_heights": self.num_heights,
             "the_depths": self.the_depths,
+            "the_heights": self.the_heights,
             "the_temps": self.the_temps,
             "the_sals": self.the_sals,
             "num_wq_vars": self.num_wq_vars,
@@ -1774,10 +1831,16 @@ class SnowIceBlock(_BaseBlock):
         snow_albedo_factor: Union[float, None] = None,
         snow_rho_min: Union[float, None] = None,
         snow_rho_max: Union[float, None] = None,
+        min_ice_thickness: Union[float, None] = None,
+        dt_iceon_avg: Union[float, None] = None,
+        avg_surf_temp_thres: Union[float, None] = None,
     ):
         self.snow_albedo_factor = snow_albedo_factor
         self.snow_rho_max = snow_rho_max
         self.snow_rho_min = snow_rho_min
+        self.min_ice_thickness = min_ice_thickness
+        self.dt_iceon_avg = dt_iceon_avg
+        self.avg_surf_temp_thres = avg_surf_temp_thres
     
     def get_params(
         self, 
@@ -1810,7 +1873,10 @@ class SnowIceBlock(_BaseBlock):
         snowice_dict = {
             "snow_albedo_factor": self.snow_albedo_factor,
             "snow_rho_min": self.snow_rho_min,
-            "snow_rho_max": self.snow_rho_max
+            "snow_rho_max": self.snow_rho_max,
+            "min_ice_thickness": self.min_ice_thickness,
+            "dt_iceon_avg": self.dt_iceon_avg,
+            "avg_surf_temp_thres":self.avg_surf_temp_thres
         }
         return snowice_dict
     
@@ -1960,27 +2026,27 @@ class MeteorologyBlock(_BaseBlock):
     def __init__(
         self,
         met_sw: Union[bool, None] = None,
-        meteo_fl: Union[str, None] = None,
-        subdaily: Union[bool, None] = None,
-        time_fmt: Union[str, None] = None,
+        lw_type: Union[str, None] = None,
+        rain_sw: Union[bool, None] = None,        
+        atm_stab: Union[int, None] = None,
+        catchrain: Union[bool, None] = None,
         rad_mode: Union[int, None] = None,
         albedo_mode: Union[int, None] = None,
+        cloud_mode: Union[int, None] = None,                                                
+        meteo_fl: Union[str, None] = None,
+        subdaily: Union[bool, None] = None,
+        wind_factor: Union[float, None] = None,        
         sw_factor: Union[float, None] = None,
-        lw_type: Union[str, None] = None,
-        cloud_mode: Union[int, None] = None,
         lw_factor: Union[float, None] = None,
-        atm_stab: Union[int, None] = None,
-        rh_factor: Union[float, None] = None,
         at_factor: Union[float, None] = None,
-        ce: Union[float, None] = None,
-        ch: Union[float, None] = None,
-        rain_sw: Union[bool, None] = None,
+        rh_factor: Union[float, None] = None,
         rain_factor: Union[float, None] = None,
-        catchrain: Union[bool, None] = None,
+        cd: Union[float, None] = None,        
+        ce: Union[float, None] = None,
+        ch: Union[float, None] = None,  
         rain_threshold: Union[float, None] = None,
-        runoff_coef: Union[float, None] = None,
-        cd: Union[float, None] = None,
-        wind_factor: Union[float, None] = None,
+        runoff_coef: Union[float, None] = None,      
+        time_fmt: Union[str, None] = None,
         fetch_mode: Union[int, None] = None,
         Aws: Union[float, None] = None,
         Xws: Union[float, None] = None,
@@ -1988,28 +2054,28 @@ class MeteorologyBlock(_BaseBlock):
         wind_dir: Union[float, None] = None,
         fetch_scale: Union[float, None] = None,
     ):    
-        self.met_sw = met_sw        
-        self.meteo_fl = meteo_fl
-        self.subdaily = subdaily
-        self.time_fmt = time_fmt
+        self.met_sw = met_sw      
+        self.lw_type = lw_type        
+        self.rain_sw = rain_sw    
+        self.atm_stab = atm_stab
+        self.catchrain = catchrain
         self.rad_mode = rad_mode
         self.albedo_mode = albedo_mode
+        self.cloud_mode = cloud_mode                                      
+        self.meteo_fl = meteo_fl
+        self.subdaily = subdaily
+        self.wind_factor = wind_factor
         self.sw_factor = sw_factor
-        self.lw_type = lw_type
-        self.cloud_mode = cloud_mode
         self.lw_factor = lw_factor
-        self.atm_stab = atm_stab
-        self.rh_factor = rh_factor
         self.at_factor = at_factor
+        self.rh_factor = rh_factor
+        self.rain_factor = rain_factor
+        self.cd = cd
         self.ce = ce
         self.ch = ch
-        self.rain_sw = rain_sw        
-        self.rain_factor = rain_factor
-        self.catchrain = catchrain
         self.rain_threshold = rain_threshold
-        self.runoff_coef = runoff_coef
-        self.cd = cd
-        self.wind_factor = wind_factor
+        self.runoff_coef = runoff_coef        
+        self.time_fmt = time_fmt
         self.fetch_mode = fetch_mode
         self.Aws = Aws
         self.Xws = Xws
@@ -2047,27 +2113,27 @@ class MeteorologyBlock(_BaseBlock):
             )
         meteorology_dict = {
             "met_sw": self.met_sw,
-            "meteo_fl": self.meteo_fl,
-            "subdaily": self.subdaily,
-            "time_fmt": self.time_fmt,
+            "lw_type": self.lw_type,
+            "rain_sw": self.rain_sw,
+            "atm_stab": self.atm_stab,
+            "catchrain": self.catchrain,
             "rad_mode": self.rad_mode,
             "albedo_mode": self.albedo_mode,
-            "sw_factor": self.sw_factor,
-            "lw_type": self.lw_type,
             "cloud_mode": self.cloud_mode,
+            "meteo_fl": self.meteo_fl,
+            "subdaily": self.subdaily,
+            "wind_factor": self.wind_factor,
+            "sw_factor": self.sw_factor,
             "lw_factor": self.lw_factor,
-            "atm_stab": self.atm_stab,
-            "rh_factor": self.rh_factor,
             "at_factor": self.at_factor,
+            "rh_factor": self.rh_factor,
+            "rain_factor": self.rain_factor,
+            "cd": self.cd,
             "ce": self.ce,
             "ch": self.ch,
-            "rain_sw": self.rain_sw,
-            "rain_factor": self.rain_factor,
-            "catchrain": self.catchrain,
             "rain_threshold": self.rain_threshold,
             "runoff_coef": self.runoff_coef,
-            "cd": self.cd,
-            "wind_factor": self.wind_factor,
+            "time_fmt": self.time_fmt,
             "fetch_mode": self.fetch_mode,
             "Aws": self.Aws,
             "Xws": self.Xws,

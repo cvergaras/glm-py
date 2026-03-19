@@ -694,7 +694,9 @@ class NCProfile:
         var: str,
         reference: str = "bottom",
         param_dict: dict = {},
-        min_diff: float = 0.1
+        min_diff: float = 0.1,
+        vmin: float = None,
+        vmax: float = None
     ) -> AxesImage:
         """Plot the profile timeseries of a variable on a matplotlib Axes.
 
@@ -713,6 +715,10 @@ class NCProfile:
         min_diff : float, optional
             Minimum required difference between min and max values. If the actual
             range is smaller, artificial limits will be set. Default is 0.1.
+        vmin : float, optional
+            Minimum value for the color scale. If None, will be determined from data.
+        vmax : float, optional
+            Maximum value for the color scale. If None, will be determined from data.
 
         Returns
         -------
@@ -724,11 +730,20 @@ class NCProfile:
         )
         x_dates = self._get_time()
         
-        # Validate data range and set vmin/vmax if needed
-        range_limits = self._validate_data_range(reproj_var, min_diff)
-        if range_limits is not None:
-            param_dict['vmin'] = range_limits[0]
-            param_dict['vmax'] = range_limits[1]
+        # Set vmin/vmax from kwargs if provided, otherwise validate data range
+        if vmin is not None:
+            param_dict['vmin'] = vmin
+        if vmax is not None:
+            param_dict['vmax'] = vmax
+        
+        # If vmin/vmax not provided via kwargs, validate data range and set if needed
+        if vmin is None or vmax is None:
+            range_limits = self._validate_data_range(reproj_var, min_diff)
+            if range_limits is not None:
+                if vmin is None:
+                    param_dict['vmin'] = range_limits[0]
+                if vmax is None:
+                    param_dict['vmax'] = range_limits[1]
 
         # Calculate proper x-axis extent
         x_extent = [
@@ -749,8 +764,13 @@ class NCProfile:
         out = ax.imshow(reproj_var, **param_dict)
         
         # Set x-axis ticks to actual dates
-        ax.set_xticks(x_dates)
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d/%m/%y"))
+        locator = mdates.AutoDateLocator()
+        date_formatter = mdates.DateFormatter("%b-%y")
+        ax.set_xticks(x_dates)#, rotation=45)
+        ax.tick_params(axis="x", rotation=45)
+        # ax.xticks(rotation=45)
+        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_formatter(date_formatter)
         ax.set_ylabel("Depth (m)")
         ax.set_xlabel("Date")
 
