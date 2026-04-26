@@ -715,6 +715,11 @@ class NMLWriter(_NML):
             "debugging": {
                 "disable_evap": NMLWriter.write_nml_bool,
             },
+            "evaporation": {
+                "evap_file": NMLWriter.write_nml_str,
+                "time_fmt": NMLWriter.write_nml_str,
+                "timezone": None,
+            },
             "mixing": {
                 "surface_mixing": None,
                 "coef_mix_conv": None,
@@ -1661,6 +1666,11 @@ class NMLReader(_NML):
             },
             "debugging": {
                 "disable_evap": NMLReader.read_nml_bool,
+            },
+            "evaporation": {
+                "evap_file": NMLReader.read_nml_str,
+                "time_fmt": NMLReader.read_nml_str,
+                "timezone": NMLReader.read_nml_float,
             },
             "mixing": {
                 "surface_mixing": NMLReader.read_nml_int,

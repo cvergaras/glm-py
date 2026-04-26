@@ -90,8 +90,11 @@ class GLMNML:
         Dictionary of `&snow_ice` parameters. See `glm_nml.SnowIceBlock`. 
         Default is `None`.
     wq_setup : Union[dict, None]
-        Dictionary of `&wq_setup` parameters. See `glm_nml.WQSetupBlock`. 
+        Dictionary of `&wq_setup` parameters. See `glm_nml.WQSetupBlock`.
         Default is `None`.
+    evaporation : Union[dict, None]
+        Dictionary of `&evaporation` parameters. See
+        `glm_nml.EvaporationBlock`. Default is `None`.
 
     Examples
     --------
@@ -173,7 +176,8 @@ class GLMNML:
         outflow: Union[dict, None] = None,
         sediment: Union[dict, None] = None,
         snow_ice: Union[dict, None] = None,
-        check_params: bool = False      
+        evaporation: Union[dict, None] = None,
+        check_params: bool = False
     ):
         self.glm_setup = glm_setup
         self.debugging = debugging
@@ -190,6 +194,7 @@ class GLMNML:
         self.outflow = outflow
         self.sediment = sediment
         self.snow_ice = snow_ice
+        self.evaporation = evaporation
 
 
         if check_params:
@@ -216,15 +221,19 @@ class GLMNML:
         """
         nml_dict = {}
         block_dicts = [
-            self.glm_setup, self.debugging, self.wq_setup, self.light, self.mixing, self.morphometry, self.time, 
-            self.output, self.init_profiles, self.meteorology, 
-            self.bird_model, self.inflow, self.outflow, self.sediment,
-            self.snow_ice
+            self.glm_setup, self.debugging, self.evaporation,
+            self.wq_setup, self.light, self.mixing,
+            self.morphometry, self.time, self.output,
+            self.init_profiles, self.meteorology,
+            self.bird_model, self.inflow, self.outflow,
+            self.sediment, self.snow_ice
         ]
         block_names = [
-            "glm_setup", "debugging", "wq_setup","light", "mixing", "morphometry", "time", "output", 
-            "init_profiles", "meteorology",  "bird_model", "inflow",
-            "outflow", "sediment", "snowice"
+            "glm_setup", "debugging", "evaporation",
+            "wq_setup", "light", "mixing",
+            "morphometry", "time", "output",
+            "init_profiles", "meteorology", "bird_model",
+            "inflow", "outflow", "sediment", "snowice"
         ]
         for i in range(0, len(block_dicts)):
             if block_dicts[i] is not None:
@@ -2614,6 +2623,82 @@ class NMLOutflow(OutflowBlock):
     def __init__(self, *args, **kwargs):
         warnings.warn(
             _deprecated_class_warning("NMLOutflow", "OutflowBlock", "glm_nml"),
+            DeprecationWarning,
+            stacklevel=2
+        )
+        super().__init__(*args, **kwargs)
+
+class EvaporationBlock(_BaseBlock):
+    """Construct the `&evaporation` model parameters.
+
+    The `&evaporation` parameters configure an external evaporation forcing
+    file for GLM. When provided, GLM reads evaporation rates from the
+    specified CSV instead of computing them internally.
+
+    Attributes
+    ----------
+    evap_file : Union[str, None]
+        Path to the evaporation CSV file. Default is `None`.
+    time_fmt : Union[str, None]
+        Time format string for the evaporation file, e.g.,
+        ``'YYYY-MM-DD'`` or ``'YYYY-MM-DD hh:mm:ss'``. Default is `None`.
+    timezone : Union[float, None]
+        Timezone offset (hours) for the evaporation data. Default is `None`.
+
+    Examples
+    --------
+    >>> from glmpy.nml import glm_nml
+    >>> evaporation = glm_nml.EvaporationBlock(
+    ...     evap_file='input/evap.csv',
+    ...     time_fmt='YYYY-MM-DD',
+    ...     timezone=0.0,
+    ... )
+    >>> evap_attrs = {
+    ...     "evap_file": "input/evap.csv",
+    ...     "time_fmt": "YYYY-MM-DD hh:mm:ss",
+    ...     "timezone": 0.0,
+    ... }
+    >>> evaporation.set_attributes(evap_attrs)
+    """
+    def __init__(
+        self,
+        evap_file: Union[str, None] = None,
+        time_fmt: Union[str, None] = None,
+        timezone: Union[float, None] = None,
+    ):
+        self.evap_file = evap_file
+        self.time_fmt = time_fmt
+        self.timezone = timezone
+
+    def get_params(
+        self, check_params: bool = False
+    ) -> dict[str, Union[float, str, None]]:
+        """Returns a dictionary of model parameters."""
+        if check_params:
+            warnings.warn(
+                "As of glm-py 0.2.0, error checking with check_params is not"
+                " implemented. Erroneous parameters will not be raised.",
+                category=UserWarning,
+                stacklevel=2
+            )
+        evaporation_dict = {
+            "evap_file": self.evap_file,
+            "time_fmt": self.time_fmt,
+            "timezone": self.timezone,
+        }
+        return evaporation_dict
+
+    def __call__(
+        self, check_errors: bool = False
+    ) -> dict[str, Union[float, str, None]]:
+        return self.get_params(check_params=check_errors)
+
+class NMLEvaporation(EvaporationBlock):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            _deprecated_class_warning(
+                "NMLEvaporation", "EvaporationBlock", "glm_nml"
+            ),
             DeprecationWarning,
             stacklevel=2
         )

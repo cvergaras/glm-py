@@ -771,6 +771,7 @@ class NCProfile:
         # ax.xticks(rotation=45)
         ax.xaxis.set_major_locator(locator)
         ax.xaxis.set_major_formatter(date_formatter)
+        cbar.ax.ticklabel_format(style='plain')
         ax.set_ylabel("Depth (m)")
         ax.set_xlabel("Date")
 
