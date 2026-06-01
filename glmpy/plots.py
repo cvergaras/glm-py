@@ -4,7 +4,7 @@ import pandas as pd
 import numpy.ma as ma
 import matplotlib.dates as mdates
 
-from typing import Union, List
+from typing import Union, List, Optional
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 from matplotlib.image import AxesImage
@@ -693,7 +693,7 @@ class NCProfile:
         ax: Axes,
         var: str,
         reference: str = "bottom",
-        param_dict: dict = {},
+        param_dict: Optional[dict] = None,
         min_diff: float = 0.1,
         vmin: float = None,
         vmax: float = None
@@ -711,7 +711,7 @@ class NCProfile:
             Reference frame for depth, either "bottom" or "surface". Default is 
             "bottom".
         param_dict : dict, optional
-            Parameters passed to matplotlib.axes.Axes.imshow. Default is {}.
+            Parameters passed to matplotlib.axes.Axes.imshow. Default is a fresh dict.
         min_diff : float, optional
             Minimum required difference between min and max values. If the actual
             range is smaller, artificial limits will be set. Default is 0.1.
@@ -725,6 +725,8 @@ class NCProfile:
         matplotlib.image.AxesImage
             The plotted image
         """
+        if param_dict is None:
+            param_dict = {}
         reproj_var = self._get_reproj_var(
             var=var, reference=reference
         )
@@ -762,7 +764,8 @@ class NCProfile:
         )
 
         out = ax.imshow(reproj_var, **param_dict)
-        
+        cbar = ax.figure.colorbar(out, ax=ax)
+
         # Set x-axis ticks to actual dates
         locator = mdates.AutoDateLocator()
         date_formatter = mdates.DateFormatter("%b-%y")
@@ -771,7 +774,7 @@ class NCProfile:
         # ax.xticks(rotation=45)
         ax.xaxis.set_major_locator(locator)
         ax.xaxis.set_major_formatter(date_formatter)
-        cbar.ax.ticklabel_format(style='plain')
+        cbar.ax.ticklabel_format(style="plain")
         ax.set_ylabel("Depth (m)")
         ax.set_xlabel("Date")
 
